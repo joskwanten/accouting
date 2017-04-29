@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const fs = require('fs');
+const readline = require('readline');
 
 const journal = 'data/journal.txt';
 const port = 3000;
@@ -20,14 +21,27 @@ app.use(express.static('public'))
 // get an instance of the express Router
 let router = express.Router();
 
+// This is our simple read model with the account balances
 let accounts = {};
+
+// Read the events from the file
+var rd = readline.createInterface({
+    input: fs.createReadStream(journal),
+    output: process.stdout,
+    console: false
+});
+
+// Replay events at startup to get the balances of the accounts
+rd.on('line', function (line) {
+    updateAccounts(JSON.parse(line));
+});
 
 // test route to make sure everything is working (accessed at GET http://localhost:8080/api)
 router.get('/', function (req, res) {
-    res.json({ message: 'hooray! welcome to our api!' });
+    res.json({ message: 'Accounting server is up and running' });
 });
 
-
+// Return balances of the accounts (our read model)
 router.get('/accounts', function (req, res) {
     res.json(accounts);
 });
@@ -46,7 +60,6 @@ router.post('/journal', function (request, response) {
 
         // Update the account information
         updateAccounts(request.body);
-
     }
 
     response.send(request.body);    // echo the result back
